@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"sigs.k8s.io/kind/pkg/log"
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
@@ -33,7 +34,7 @@ import (
 )
 
 // planCreation creates a slice of funcs that will create the containers
-func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs []func() error, err error) {
+func planCreation(logger log.Logger, cfg *config.Cluster, networkName string) (createContainerFuncs []func() error, err error) {
 	// we need to know all the names for NO_PROXY
 	// compute the names first before any actual node details
 	nodeNamer := common.MakeNodeNamer(cfg.Name)
@@ -109,6 +110,7 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 				if err != nil {
 					return err
 				}
+				logger.V(0).Infof("args control...", args)
 				return createContainer(args)
 			})
 		case config.WorkerRole:
@@ -117,6 +119,7 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 				if err != nil {
 					return err
 				}
+				logger.V(0).Infof("args worker...", args)
 				return createContainer(args)
 			})
 		default:
@@ -239,6 +242,7 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 		"--volume", "/var",
 		// some k8s things want to read /lib/modules
 		"--volume", "/lib/modules:/lib/modules:ro",
+		"--shm-size=2.3g",
 	},
 		args...,
 	)
@@ -390,3 +394,4 @@ func generatePortMappings(clusterIPFamily config.ClusterIPFamily, portMappings .
 	}
 	return args, nil
 }
+
